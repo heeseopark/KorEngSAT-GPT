@@ -4,12 +4,12 @@ package Algorize.KorEngSATGPT.Domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
 import java.util.List;
+import java.util.Map;
 
 @Entity
-@Table(name = "questions")
 @Getter @Setter
+@Table(name = "questions")
 public class QuestionDomain {
 
     @Id
@@ -27,13 +27,30 @@ public class QuestionDomain {
     @Column(name = "selection")
     private List<String> selections;
 
-    @Column(name = "refer_text_symbol")
-    private String referTextName;
+    @ElementCollection(fetch = FetchType.LAZY)
+    @MapKeyColumn(name = "refer_symbol")
+    @Column(name = "refer_text")
+    @CollectionTable(name = "inner_refer_texts", joinColumns = @JoinColumn(name = "question_id"))
+    private Map<String, String> innerReferTextMap;
 
-    @Column(name = "refer_text_text")
-    private String referTextInText;
+    @OneToOne
+    @MapKeyColumn(name = "refer_symbol")
+    @JoinColumn(name = "question_id")
+    private Map<String, String> outerReferTextMap;
 
-    // Constructors
-    // 참조 텍스트으 외부 mapping 여부를 선택할 수 있는지...?
+    @ElementCollection
+    @CollectionTable(name = "answer_solutions", joinColumns = @JoinColumn(name = "question_id"))
+    @MapKeyColumn(name = "answer_number")
+    @Column(name = "solution_text")
+    private Map<Integer, String> answerMap;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "passage_id")
+    private Long passageId;
+
+
+
+    // ... getters, setters, and other necessary methods go here ...
+
 }
 
