@@ -1,0 +1,351 @@
+package Algorize.KorEngSATGPT;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class KorEngSatGptApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(KorEngSatGptApplication.class, args);
+	}
+
+}
+
+
+package Algorize.KorEngSATGPT.Controller;
+
+public class OCRController {
+}
+
+package Algorize.KorEngSATGPT.Domain;
+
+public class ImageDomain {
+    public void setImageData(byte[] imageData) {
+    }
+}
+
+
+package Algorize.KorEngSATGPT.Domain;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.awt.image.BufferedImage;
+import java.util.List;
+import java.util.Map;
+
+@Entity
+@Getter @Setter
+@Table(name = "passages")
+public class PassageDomain {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "question_num_start")
+    private int questionNumStart;
+
+    @Column(name = "question_num_end")
+    private int questionNumEnd;
+
+    @Column(name = "question_text", length = 1000) // Assuming a max length of 1000 for the question text
+    private String questionText;
+
+    @ElementCollection
+    @CollectionTable(name = "passage_texts", joinColumns = @JoinColumn(name = "passage_id"))
+    @Column(name = "text_segment")
+    private List<String> passageTextList;
+
+    @ElementCollection
+    @CollectionTable(name = "refer_texts", joinColumns = @JoinColumn(name = "passage_id"))
+    @MapKeyColumn(name = "refer_symbol")
+    @Column(name = "refer_text")
+    private Map<String, String> referTextMap;
+
+    // Note: Storing images in databases as BLOBs can be inefficient.
+    // It might be better to store the image file paths in the database and the images in a file system or cloud storage.
+    @ElementCollection
+    @CollectionTable(name = "refer_images", joinColumns = @JoinColumn(name = "passage_id"))
+    @MapKeyColumn(name = "image_id")
+    @Column(name = "image_data")
+    private Map<Integer, BufferedImage> referImageMap;
+
+    // ... getters, setters, and other necessary methods go here ...
+
+}
+
+
+package Algorize.KorEngSATGPT.Domain;
+
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import java.util.List;
+import java.util.Map;
+
+@Entity
+@Getter @Setter
+@Table(name = "questions")
+public class QuestionDomain {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "question_number")
+    private int questionNumber;
+
+    @Column(name = "question_text")
+    private String questionText;
+
+    @ElementCollection
+    @CollectionTable(name = "question_selections", joinColumns = @JoinColumn(name = "question_id"))
+    @Column(name = "selection")
+    private List<String> selections;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @MapKeyColumn(name = "refer_symbol")
+    @Column(name = "refer_text")
+    @CollectionTable(name = "inner_refer_texts", joinColumns = @JoinColumn(name = "question_id"))
+    private Map<String, String> innerReferTextMap;
+
+    @OneToOne
+    @MapKeyColumn(name = "refer_symbol")
+    @JoinColumn(name = "question_id")
+    private Map<String, String> outerReferTextMap;
+
+    @ElementCollection
+    @CollectionTable(name = "answer_solutions", joinColumns = @JoinColumn(name = "question_id"))
+    @MapKeyColumn(name = "answer_number")
+    @Column(name = "solution_text")
+    private Map<Integer, String> answerMap;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "passage_id")
+    private Long passageId;
+
+
+
+    // ... getters, setters, and other necessary methods go here ...
+
+}
+
+
+
+package Algorize.KorEngSATGPT.Domain;
+
+public class TestFormatDomain {
+}
+
+
+package Algorize.KorEngSATGPT.Repository;
+
+import Algorize.KorEngSATGPT.Domain.ImageDomain;
+import Algorize.KorEngSATGPT.Domain.PassageDomain;
+import Algorize.KorEngSATGPT.Domain.QuestionDomain;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.springframework.transaction.annotation.Transactional;
+
+
+public class Repository {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional
+    public QuestionDomain saveQuestion(QuestionDomain questionDomain) {
+        entityManager.persist(questionDomain);
+        return questionDomain;
+    }
+
+    @Transactional
+    public PassageDomain savePassage(PassageDomain passageDomain) {
+        entityManager.persist(passageDomain);
+        return passageDomain;
+    }
+
+    @Transactional
+    public ImageDomain saveImage(ImageDomain imageEntity) {
+        entityManager.persist(imageEntity);
+        return imageEntity;
+    }
+
+
+    // Add other CRUD operations as needed...
+}
+
+
+package Algorize.KorEngSATGPT.Service;
+
+import Algorize.KorEngSATGPT.Domain.QuestionDomain;
+import Algorize.KorEngSATGPT.Repository.Repository;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class GPTService {
+    private final Repository repository;
+
+    public GPTService(Repository repository) {
+        this.repository = repository;
+    }
+
+    // Changed return type to Map<Integer, String> as we are getting a Map from askQuestion method
+    public Map<Integer, String> getAnswerMap(QuestionDomain questionDomain) {
+        StringBuilder prompt = new StringBuilder(questionDomain.getQuestionText());
+
+        // Assume getSelections returns a List<String> of selections
+        List<String> selections = questionDomain.getSelections();
+
+        // Append each selection to the prompt
+        for(String selection : selections) {
+            prompt.append(" ").append(selection);
+        }
+
+        return askQuestion(prompt.toString());
+    }
+
+    private Map<Integer, String> askQuestion(String prompt) {
+        // Corrected the initialization of answerselection and solutiontext
+        Integer answerselection = 0; // or some other default value
+        String solutiontext = ""; // or some other default value
+
+        // Correctly creating a Map instance and putting key-value pairs into it
+        Map<Integer, String> answerMap = new HashMap<>();
+        answerMap.put(answerselection, solutiontext);
+
+        return answerMap;
+    }
+
+
+
+}
+
+
+package Algorize.KorEngSATGPT.Service;
+
+import Algorize.KorEngSATGPT.Domain.ImageDomain;
+import Algorize.KorEngSATGPT.Domain.PassageDomain;
+import Algorize.KorEngSATGPT.Domain.QuestionDomain;
+
+import Algorize.KorEngSATGPT.Repository.Repository;
+import jakarta.transaction.Transactional;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class OCRService {
+
+    // Assuming you are injecting the repositories via a constructor
+    private final Repository repository;
+
+    public OCRService(Repository repository) {
+        this.repository = repository;
+    }
+
+    public void checkAndSaveImage(BufferedImage inputImage) {
+        if (!checkValidText(inputImage)) {
+            throw new RuntimeException("No valid text found in the image");
+        }
+
+        int recognizedQuestions = checkValidQuestion(inputImage);
+        int recognizedPassages = checkValidPassage(inputImage);
+
+        for (int i = 0; i < recognizedQuestions; i++) {
+            saveQuestion(inputImage, i);
+        }
+
+        for (int i = 0; i < recognizedPassages; i++) {
+            savePassage(inputImage, i);
+        }
+
+        saveImage(inputImage);
+    }
+
+    private boolean checkValidText(BufferedImage inputImage) {
+        // Implement logic to check for valid text in the image
+        // Return true if valid text is found, false otherwise
+        return true;
+    }
+
+    private int checkValidQuestion(BufferedImage inputImage) {
+        // Implement logic to check for valid questions in the image
+        // Return the number of recognized questions
+        return 0; // Placeholder value
+    }
+
+    private int checkValidPassage(BufferedImage inputImage) {
+        // Implement logic to check for valid passages in the image
+        // Return the number of recognized passages
+        return 0; // Placeholder value
+    }
+
+    @Transactional
+    private void saveQuestion(BufferedImage inputImage, int questionIndex) {
+        QuestionDomain questionDomain = new QuestionDomain();
+        // Populate the QuestionDomain object with recognized data
+        questionDomain.setQuestionNumber(questionIndex);
+        questionDomain.setQuestionText("Recognized Question Text"); // Placeholder value
+        questionDomain.setSelections(new ArrayList<>());
+        questionDomain.setInnerReferTextMap(new HashMap<>());
+        questionDomain.setOuterReferTextMap(new HashMap<>());
+        questionDomain.setAnswerMap(new HashMap<>());
+
+        // Save the QuestionDomain object to the database
+        repository.saveQuestion(questionDomain);
+    }
+
+    @Transactional
+    private void savePassage(BufferedImage inputImage, int passageIndex) {
+        PassageDomain passageDomain = new PassageDomain();
+        // Populate the PassageDomain object with recognized data
+        passageDomain.setQuestionNumStart(passageIndex);
+        passageDomain.setQuestionNumEnd(passageIndex);
+        passageDomain.setQuestionText("Recognized Passage Text"); // Placeholder value
+        passageDomain.setPassageTextList(new ArrayList<>());
+        passageDomain.setReferTextMap(new HashMap<>());
+        passageDomain.setReferImageMap(new HashMap<>());
+
+        // Save the PassageDomain object to the database
+        repository.savePassage(passageDomain);
+    }
+
+    @Transactional
+    private void saveImage(BufferedImage inputImage) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(inputImage, "png", baos);
+            byte[] imageData = baos.toByteArray();
+
+            ImageDomain imageEntity = new ImageDomain();
+            imageEntity.setImageData(imageData);
+
+            repository.saveImage(imageEntity);
+        } catch (IOException e) {
+            throw new RuntimeException("Error while saving the image", e);
+        }
+    }
+}
+
+
+package Algorize.KorEngSATGPT.Service;
+
+public class TranslateService {
+
+    public String translateKortoEng(String text){
+
+        return text;
+    }
+}
+
+

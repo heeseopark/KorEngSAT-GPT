@@ -31,6 +31,11 @@ public class Repository {
         return imageEntity;
     }
 
+    public QuestionDomain findQuestionById(Long id) {
+        return entityManager.find(QuestionDomain.class, id);
+    }
+
+
 
     // Add other CRUD operations as needed...
 }
