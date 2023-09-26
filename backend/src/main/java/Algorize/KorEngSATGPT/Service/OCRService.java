@@ -7,7 +7,6 @@ import Algorize.KorEngSATGPT.Domain.QuestionDomain;
 import Algorize.KorEngSATGPT.Repository.Repository;
 import jakarta.transaction.Transactional;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,6 +39,10 @@ public class OCRService {
         }
 
         saveImage(inputImage);
+    }
+
+    private void saveImage(BufferedImage inputImage) {
+
     }
 
     private boolean checkValidText(BufferedImage inputImage) {
@@ -90,19 +93,19 @@ public class OCRService {
         repository.savePassage(passageDomain);
     }
 
-    @Transactional
-    private void saveImage(BufferedImage inputImage) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(inputImage, "png", baos);
-            byte[] imageData = baos.toByteArray();
-
-            ImageDomain imageEntity = new ImageDomain();
-            imageEntity.setImageData(imageData);
-
-            repository.saveImage(imageEntity);
-        } catch (IOException e) {
-            throw new RuntimeException("Error while saving the image", e);
-        }
-    }
+//    @Transactional
+//    private void saveImage(BufferedImage inputImage) {
+//        try {
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//            ImageIO.write(inputImage, "png", baos);
+//            byte[] imageData = baos.toByteArray();
+//
+//            ImageDomain imageEntity = new ImageDomain();
+//            imageEntity.setImageData(imageData);
+//
+//            repository.saveImage(imageEntity);
+//        } catch (IOException e) {
+//            throw new RuntimeException("Error while saving the image", e);
+//        }
+//    }
 }

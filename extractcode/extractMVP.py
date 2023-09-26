@@ -22,9 +22,9 @@ def save_to_file(content, filename):
 # output_file = "/path/to/your/output/file.txt"
 # save_to_file(code, output_file)
 
-directory_path = "C:/Github/KorEngSAT-GPT/backend/src/main/java/Algorize/KorEngSATGPT"
+directory_path = "C:/Github/KorEngSAT-GPT/backend/src/main/java/Algorize/KorEngSATGPT/MVP"
 
 code = extract_java_code_from_directory(directory_path)
 
-output_files = "C:/Github/KorEngSAT-GPT/extractcode/output.txt"
+output_files = "C:/Github/KorEngSAT-GPT/extractcode/MVPcode.txt"
 save_to_file(code, output_files)
