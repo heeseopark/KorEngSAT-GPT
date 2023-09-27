@@ -14,7 +14,7 @@ public class MVPService {
         this.mvpRepository = mvpRepository;
     }
 
-    public String findText(String imageUrl){
+    public String findText(MVPDomain mvpDomain){
         // Use Tesseract to get text from image URL
         String text = ""; // Replace with actual implementation
 
@@ -27,9 +27,19 @@ public class MVPService {
         return text;
     }
 
-    private MVPDomain saveText(String text) {
+    private MVPDomain saveText(MVPDomain mvpDomain) {
+        String text = findText(mvpDomain);
+        mvpDomain.setImageText(text);
+        mvpRepository.save(mvpDomain);
+        return mvpDomain;
+    }
 
-        return null;
+    public String getGptAnswer(MVPDomain mvpDomain){
+        String text = "";
+        // add code of first getting the imagetext field from the mvpDomain and sending it to the gpt using gpt api.
+        // this function should return the text that gpt has provided
+
+        return text;
     }
 
     public Map<Integer, String> findAndSaveAnswer(Long id){
