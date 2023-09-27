@@ -33,10 +33,9 @@ public class QuestionDomain {
     @CollectionTable(name = "inner_refer_texts", joinColumns = @JoinColumn(name = "question_id"))
     private Map<String, String> innerReferTextMap;
 
-    @OneToOne
-    @MapKeyColumn(name = "refer_symbol")
-    @JoinColumn(name = "question_id")
-    private Map<String, String> outerReferTextMap;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "passage_id")
+    private PassageDomain passage;
 
     @ElementCollection
     @CollectionTable(name = "answer_solutions", joinColumns = @JoinColumn(name = "question_id"))
@@ -44,11 +43,9 @@ public class QuestionDomain {
     @Column(name = "solution_text")
     private Map<Integer, String> answerMap;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "passage_id")
-    private Long passageId;
-
-
+    public Map<String, String> getOuterReferTextMap() {
+        return passage.getReferTextMap();
+    }
 
     // ... getters, setters, and other necessary methods go here ...
 

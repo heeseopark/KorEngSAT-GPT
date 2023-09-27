@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Map;
 
@@ -37,13 +36,16 @@ public class PassageDomain {
     @Column(name = "refer_text")
     private Map<String, String> referTextMap;
 
+    @OneToMany(mappedBy = "passage", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionDomain> questions;
+
     // Note: Storing images in databases as BLOBs can be inefficient.
     // It might be better to store the image file paths in the database and the images in a file system or cloud storage.
-    @ElementCollection
-    @CollectionTable(name = "refer_images", joinColumns = @JoinColumn(name = "passage_id"))
-    @MapKeyColumn(name = "image_id")
-    @Column(name = "image_data")
-    private Map<Integer, BufferedImage> referImageMap;
+//    @ElementCollection
+//    @CollectionTable(name = "refer_images", joinColumns = @JoinColumn(name = "passage_id"))
+//    @MapKeyColumn(name = "image_id")
+//    @Column(name = "image_data")
+//    private Map<Integer, BufferedImage> referImageMap;
 
     // ... getters, setters, and other necessary methods go here ...
 
