@@ -9,6 +9,11 @@ import java.util.Optional;
 @RequestMapping("/api")
 public class MVPController {
 
+    @GetMapping("/api/hello")
+    public String test() {
+        return "Hello, world!";
+    }
+
     private final MVPService mvpService;
 
     public MVPController(MVPService mvpService) {
